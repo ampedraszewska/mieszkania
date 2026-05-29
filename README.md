@@ -2,7 +2,7 @@
 
 Prywatny dashboard ofert najmu (Śródmieście / Powiśle), zaszyfrowany hasłem i hostowany na GitHub Pages.
 
-**Strona:** https://AMP_USER.github.io/mieszkania/ (wpisz hasło, żeby zobaczyć)
+**Strona:** https://ampedraszewska.github.io/mieszkania/ (wpisz hasło, żeby zobaczyć)
 
 ## Jak to działa (prywatność)
 
