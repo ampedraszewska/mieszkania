@@ -1,0 +1,11 @@
+# Surowe dane z numerami telefonów pośredników — NIGDY do publicznego repo
+data/listings.json
+
+# Niezaszyfrowany dashboard (zawiera dane w plaintext) — tylko lokalnie
+dashboard.html
+
+# Eksport do Google My Maps (zawiera numery) — tylko lokalnie
+mieszkania-google-maps.csv
+
+.DS_Store
+node_modules/
