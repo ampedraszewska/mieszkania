@@ -6,6 +6,12 @@ import json, html, datetime, os, math, csv
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+# Google Sheet „Tracker mieszkań" — wspólny, edytowalny przez Ciebie i chłopaka.
+# Dashboard pobiera z niego dane na żywo (kolumny: Status / Kto dzwonił / Co ustalono / Notatki),
+# kluczem jest ID oferty (kolumna A). Edycja: przycisk „Otwórz tracker" na stronie.
+SHEET_ID = "1NgM9RQnF42SAZD0Uz3xx23vmHPc2Im0kIcoexGQinf4"
+SHEET_TAB = "Tracker"
+
 # Ręczne nadpisania pól, których otodom nie podaje poprawnie / strukturalnie.
 # Klucz = fragment ID z URL oferty.
 OVERRIDES = {
@@ -91,7 +97,8 @@ def build():
             return f'<span class="chip {cls}">{"✓ tak" if v=="tak" else "—"}</span>'
 
         tel_cell = f'<a href="tel:{telhref}" class="tel">{tel}</a>' if telhref else "—"
-        rows.append(f"""    <tr>
+        rid = "ID" + (r.get("url") or "").split("-ID")[-1]
+        rows.append(f"""    <tr data-id="{html.escape(rid)}">
       <td class="idx">{i}</td>
       <td class="addr"><a href="{url}" target="_blank">{addr}</a></td>
       <td class="num" data-sort="{num(metraz)}">{metraz}</td>
@@ -104,6 +111,8 @@ def build():
       <td class="small">{odkiedy}</td>
       <td>{pos}</td>
       <td class="tel-cell">{tel_cell}</td>
+      <td class="trk-status small"></td>
+      <td class="trk-notes small"></td>
     </tr>""")
         if r.get("lat") and r.get("lng"):
             points.append({"n": i, "lat": r["lat"], "lng": r["lng"],
@@ -125,7 +134,8 @@ def build():
     n = len(data)
     n_sauna = sum(1 for r in data if r.get("sauna") == "tak")
     doc = TEMPLATE.format(today=today, n=n, n_sauna=n_sauna,
-                          rows=chr(10).join(rows), points=json.dumps(points, ensure_ascii=False))
+                          rows=chr(10).join(rows), points=json.dumps(points, ensure_ascii=False),
+                          sheet_id=SHEET_ID, sheet_tab=SHEET_TAB)
     open(os.path.join(HERE, "dashboard.html"), "w", encoding="utf-8").write(doc)
     print(f"Wrote dashboard.html + mieszkania-google-maps.csv ({n} ofert)")
 
@@ -175,6 +185,15 @@ TEMPLATE = r"""<!DOCTYPE html>
   .leaflet-popup-content {{ font:13px/1.45 -apple-system,sans-serif; }}
   .leaflet-popup-content a {{ color:#1a56db; }}
   footer {{ color:var(--mut); font-size:12px; margin-top:16px; }}
+  .trk-btn {{ background:var(--accent); color:#0f1115; text-decoration:none; font-weight:700; font-size:13px; padding:10px 16px; border-radius:10px; display:inline-flex; align-items:center; }}
+  .trk-btn:hover {{ filter:brightness(1.08); }}
+  .trk-status {{ font-weight:600; }}
+  .trk-status .s {{ display:inline-block; padding:2px 8px; border-radius:20px; font-size:12px; }}
+  .trk-status .s-hot {{ background:rgba(62,207,142,.15); color:var(--green); }}
+  .trk-status .s-wait {{ background:rgba(255,209,102,.15); color:var(--price); }}
+  .trk-status .s-no {{ background:rgba(139,147,163,.15); color:var(--mut); }}
+  .trk-notes b {{ color:var(--txt); font-weight:600; }}
+  .trk-notes .lbl {{ color:var(--mut); }}
 </style>
 </head>
 <body>
@@ -185,7 +204,9 @@ TEMPLATE = r"""<!DOCTYPE html>
     <div class="stat"><b>{n}</b><span>ofert</span></div>
     <div class="stat"><b>{n_sauna}</b><span>z sauną w budynku</span></div>
     <div class="stat"><b>{n}</b><span>z parkingiem/garażem</span></div>
+    <a class="trk-btn" href="https://docs.google.com/spreadsheets/d/{sheet_id}/edit" target="_blank">✏️ Otwórz tracker — kto dzwonił / co ustalono</a>
   </div>
+  <p class="sub" id="trk-info">Status i notatki ładują się na żywo z arkusza. Edytujcie w trackerze — po odświeżeniu strony zmiany pojawią się tutaj.</p>
   <div id="map"></div>
   <table id="t">
     <thead>
@@ -202,6 +223,8 @@ TEMPLATE = r"""<!DOCTYPE html>
         <th>Dostępne od</th>
         <th>Pośrednik</th>
         <th>Telefon</th>
+        <th>Status</th>
+        <th>Kto dzwonił / ustalenia / notatki</th>
       </tr>
     </thead>
     <tbody>
@@ -243,6 +266,39 @@ TEMPLATE = r"""<!DOCTYPE html>
       }});
       asc=!asc; rows.forEach(r => tb.appendChild(r));
     }});
+  }});
+
+  // --- Tracker na żywo z Google Sheet (gviz, CORS-friendly) ---
+  const SHEET_ID = "{sheet_id}";
+  const SHEET_TAB = "{sheet_tab}";
+  const GVIZ = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&sheet='+encodeURIComponent(SHEET_TAB);
+  function esc(s){{ const d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }}
+  function statusChip(s){{
+    const t=(s||'').toString().trim(); if(!t) return '';
+    const low=t.toLowerCase(); let cls='s-wait';
+    if(/(umów|umow|zainteres|tak|ok|super|świetn|do obejrz|ogląd|oferta|wizyt)/.test(low)) cls='s-hot';
+    else if(/(odpada|nie |wynaj|zaj[eę]t|rezygn|brak|odrzu)/.test(low)) cls='s-no';
+    return '<span class="s '+cls+'">'+esc(t)+'</span>';
+  }}
+  fetch(GVIZ).then(r=>r.text()).then(txt=>{{
+    const m=txt.match(/setResponse\((.*)\)/s); if(!m) return;
+    const d=JSON.parse(m[1]); const rows=d.table.rows; const byId={{}};
+    for(let i=1;i<rows.length;i++){{
+      const c=rows[i].c; if(!c) continue;
+      const id=(c[0]&&c[0].v)?String(c[0].v).trim():''; if(!id) continue;
+      byId[id]={{status:c[2]&&c[2].v, kto:c[3]&&c[3].v, ust:c[4]&&c[4].v, not:c[5]&&c[5].v}};
+    }}
+    document.querySelectorAll('#t tbody tr').forEach(tr=>{{
+      const v=byId[tr.dataset.id]; if(!v) return;
+      const st=tr.querySelector('.trk-status'); if(st) st.innerHTML=statusChip(v.status);
+      const parts=[];
+      if(v.kto) parts.push('<span class="lbl">tel:</span> '+esc(v.kto));
+      if(v.ust) parts.push('<span class="lbl">ustalenia:</span> '+esc(v.ust));
+      if(v.not) parts.push('<span class="lbl">notatki:</span> '+esc(v.not));
+      const nt=tr.querySelector('.trk-notes'); if(nt) nt.innerHTML=parts.join('<br>');
+    }});
+  }}).catch(e=>{{
+    const el=document.getElementById('trk-info'); if(el) el.textContent='Nie udało się pobrać trackera (sprawdź połączenie).';
   }});
 </script>
 </body>

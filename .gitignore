@@ -9,3 +9,6 @@ mieszkania-google-maps.csv
 
 .DS_Store
 node_modules/
+
+__pycache__/
+*.pyc
