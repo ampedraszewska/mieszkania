@@ -21,7 +21,8 @@ OVERRIDES = {
     "ID4Aw2S": {"ulica": "Plac Trzech Krzyży"},
     "ID4BjUK": {"ulica": "Nowogrodzka"},
     "ID4BnQH": {"dostepne_od": "2026-05-18"},
-    "ID4BgZm": {"ulica": "Górskiego 2"},  # otodom nie podaje ulicy — to projekt Restaura Górskiego
+    "ID4BgZm": {"ulica": "Górskiego 2"},  # Restaura Górskiego — otodom nie podaje ulicy
+    "ID4uDHh": {"ulica": "Górskiego 1"},  # druga oferta na Górskiego (Restaura)
 }
 
 # Centralne stacje metra Warszawy (M1 + M2): nazwa -> (lat, lng)
