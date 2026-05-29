@@ -299,13 +299,14 @@ TEMPLATE = r"""<!DOCTYPE html>
     for(let i=1;i<rows.length;i++){{
       const c=rows[i].c; if(!c) continue;
       const id=(c[0]&&c[0].v)?String(c[0].v).trim():''; if(!id) continue;
-      byId[id]={{status:c[2]&&c[2].v, kto:c[3]&&c[3].v, ust:c[4]&&c[4].v, not:c[5]&&c[5].v}};
+      byId[id]={{status:c[10]&&c[10].v, viewing:c[11]&&c[11].v, kto:c[12]&&c[12].v, ust:c[13]&&c[13].v, not:c[14]&&c[14].v}};
     }}
     document.querySelectorAll('#t tbody tr').forEach(tr=>{{
       const v=byId[tr.dataset.id]; if(!v) return;
       const st=tr.querySelector('.trk-status'); if(st) st.innerHTML=statusChip(v.status);
       const parts=[];
-      if(v.kto) parts.push('<span class="lbl">tel:</span> '+esc(v.kto));
+      if(v.kto) parts.push('<span class="lbl">kto:</span> '+esc(v.kto));
+      if(v.viewing) parts.push('<span class="lbl">viewing:</span> '+esc(v.viewing));
       if(v.ust) parts.push('<span class="lbl">ustalenia:</span> '+esc(v.ust));
       if(v.not) parts.push('<span class="lbl">notatki:</span> '+esc(v.not));
       const nt=tr.querySelector('.trk-notes'); if(nt) nt.innerHTML=parts.join('<br>');
