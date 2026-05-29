@@ -18,6 +18,7 @@ OVERRIDES = {
     "ID4Aw2S": {"ulica": "Plac Trzech Krzyży"},
     "ID4BjUK": {"ulica": "Nowogrodzka"},
     "ID4BnQH": {"dostepne_od": "2026-05-18"},
+    "ID4BgZm": {"ulica": "Górskiego 2"},  # otodom nie podaje ulicy — to projekt Restaura Górskiego
 }
 
 # Centralne stacje metra Warszawy (M1 + M2): nazwa -> (lat, lng)
@@ -62,6 +63,13 @@ def load():
         for frag, ov in OVERRIDES.items():
             if frag in r.get("url", ""):
                 r.update(ov)
+        # Bez prefiksu „ul." — ani w dashboard, ani w trackerze
+        u = (r.get("ulica") or "").strip()
+        for pref in ("ul. ", "ul.", "Ul. ", "Ul."):
+            if u.startswith(pref):
+                u = u[len(pref):].strip()
+                break
+        r["ulica"] = u
         if r.get("lat") and r.get("lng"):
             r["metro"], r["metro_m"] = nearest_metro(r["lat"], r["lng"])
         else:
