@@ -9,7 +9,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # Google Sheet „Tracker mieszkań" — wspólny, edytowalny przez Ciebie i chłopaka.
 # Dashboard pobiera z niego dane na żywo (kolumny: Status / Kto dzwonił / Co ustalono / Notatki),
 # kluczem jest ID oferty (kolumna A). Edycja: przycisk „Otwórz tracker" na stronie.
-SHEET_ID = "1NgM9RQnF42SAZD0Uz3xx23vmHPc2Im0kIcoexGQinf4"
+SHEET_ID = "1r08LM2oHW6xgIKpFORNJTpUb_8mEKkQW7-cW4nXR8fg"
 SHEET_TAB = "Tracker"
 
 # Ręczne nadpisania pól, których otodom nie podaje poprawnie / strukturalnie.
