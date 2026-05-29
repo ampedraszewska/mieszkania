@@ -12,6 +12,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SHEET_ID = "1r08LM2oHW6xgIKpFORNJTpUb_8mEKkQW7-cW4nXR8fg"
 SHEET_TAB = "Tracker"
 
+# Oferty wycofane / niedostępne — pomijane przy budowaniu (klucz = fragment ID z URL).
+EXCLUDE = {"ID4BjUK"}  # Nowogrodzka — oferta niedostępna (zdjęta 2026-05-29)
+
 # Ręczne nadpisania pól, których otodom nie podaje poprawnie / strukturalnie.
 # Klucz = fragment ID z URL oferty.
 OVERRIDES = {
@@ -59,6 +62,7 @@ def nearest_metro(lat, lng):
 
 def load():
     data = json.load(open(os.path.join(HERE, "data", "listings.json")))
+    data = [r for r in data if not any(x in r.get("url", "") for x in EXCLUDE)]
     for r in data:
         for frag, ov in OVERRIDES.items():
             if frag in r.get("url", ""):
